@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, MessageCircle } from "lucide-react";
 import { NAV_LINKS } from "@/lib/constants";
 import { useWhatsAppStore } from "@/store/whatsapp-store";
+import SearchBar from "./SearchBar";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -48,6 +49,7 @@ export default function Navbar() {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
+            <SearchBar className="w-64" />
             <a
               href={getLink()}
               target="_blank"
@@ -77,6 +79,7 @@ export default function Navbar() {
             className="md:hidden border-t border-border bg-background"
           >
             <div className="px-4 py-4 space-y-3">
+              <SearchBar className="mb-3" />
               {NAV_LINKS.map((link) => (
                 <Link
                   key={link.href}
