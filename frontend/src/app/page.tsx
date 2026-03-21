@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { MessageCircle, Sparkles, Palette, Heart } from "lucide-react";
-import { categories } from "@/lib/products";
 import { fetchProducts } from "@/lib/api";
 import { getWhatsAppLink, BRAND } from "@/lib/constants";
 import ProductCard from "@/components/ProductCard";
@@ -16,7 +15,7 @@ export const metadata: Metadata = {
 
 export default async function HomePage() {
   const products = await fetchProducts();
-  const trendingProducts = products.filter((p) => p.trending);
+  const categories = [...new Set(products.map(p => p.category))];
   const popularProducts = products.slice(0, 8);
 
   return (

@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react";
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import { categories } from "@/lib/products";
 import ProductCard from "@/components/ProductCard";
 import FadeIn from "@/components/FadeIn";
 import type { Product } from "@/lib/products";
@@ -16,9 +15,20 @@ export default function ProductsClient({
 }) {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 2000]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 10000]);
   const [sort, setSort] = useState<SortOption>("popular");
   const [showFilters, setShowFilters] = useState(false);
+
+  // Get unique categories from products
+  const categories = useMemo(() => {
+    return [...new Set(products.map(p => p.category))];
+  }, [products]);
+
+  // Calculate max price from products
+  const maxPrice = useMemo(() => {
+    if (products.length === 0) return 10000;
+    return Math.ceil(Math.max(...products.map(p => p.priceValue)) / 100) * 100;
+  }, [products]);
 
   const filtered = useMemo(() => {
     let result = [...products];
@@ -122,7 +132,7 @@ export default function ProductsClient({
                       <input
                         type="range"
                         min="0"
-                        max="2000"
+                        max={maxPrice}
                         step="50"
                         value={priceRange[1]}
                         onChange={(e) =>
@@ -193,7 +203,7 @@ export default function ProductsClient({
                 onClick={() => {
                   setSearch("");
                   setSelectedCategory("All");
-                  setPriceRange([0, 2000]);
+                  setPriceRange([0, maxPrice]);
                 }}
                 className="mt-4 text-primary font-medium hover:underline"
               >

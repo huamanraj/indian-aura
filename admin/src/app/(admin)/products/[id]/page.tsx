@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import ProductForm from '@/components/ProductForm';
 import { Product } from '@/lib/types';
-import { getProductById } from '@/lib/utils';
+import { products as productsApi } from '@/lib/api';
 
 export default function EditProductPage() {
   const [product, setProduct] = useState<Product | null>(null);
@@ -13,16 +13,23 @@ export default function EditProductPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const id = params.id as string;
-    const data = getProductById(id);
-    
-    if (!data) {
-      router.push('/products');
-      return;
-    }
-
-    setProduct(data);
-    setIsLoading(false);
+    const fetchProduct = async () => {
+      const id = params.id as string;
+      try {
+        const data = await productsApi.getById(id);
+        if (!data) {
+          router.push('/products');
+          return;
+        }
+        setProduct(data);
+      } catch (err) {
+        console.error('Error fetching product:', err);
+        router.push('/products');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProduct();
   }, [params.id, router]);
 
   if (isLoading) {

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, MessageCircle, Tag, Sparkles } from "lucide-react";
-import { products } from "@/lib/products";
+import { fetchProductById, fetchProducts, fetchSettings } from "@/lib/api";
 import { getWhatsAppLink } from "@/lib/constants";
 import FadeIn from "@/components/FadeIn";
 import ProductCard from "@/components/ProductCard";
@@ -14,7 +14,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const product = products.find((p) => p.id === Number(id));
+  const product = await fetchProductById(id);
   if (!product) return { title: "Product Not Found" };
   return {
     title: product.name,
@@ -26,18 +26,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export async function generateStaticParams() {
-  return products.map((product) => ({ id: String(product.id) }));
-}
-
 export default async function ProductDetailPage({ params }: Props) {
   const { id } = await params;
-  const product = products.find((p) => p.id === Number(id));
+  const product = await fetchProductById(id);
 
   if (!product) notFound();
 
-  const relatedProducts = products
-    .filter((p) => p.category === product.category && p.id !== product.id)
+  const [allProducts, settings] = await Promise.all([fetchProducts(), fetchSettings()]);
+  const relatedProducts = allProducts
+    .filter((p) => p.category === product.category && String(p.id) !== String(product.id))
     .slice(0, 4);
 
   return (
@@ -92,7 +89,7 @@ export default async function ProductDetailPage({ params }: Props) {
             </div>
 
             <a
-              href={getWhatsAppLink(product.name)}
+              href={getWhatsAppLink(product.name, settings.whatsappNumber)}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 w-full mt-8 rounded-full bg-primary text-primary-foreground py-4 text-lg font-semibold transition-all duration-300 hover:shadow-xl hover:shadow-primary/25 hover:scale-105"

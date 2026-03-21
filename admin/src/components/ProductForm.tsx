@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import ImageUpload from '@/components/ImageUpload';
 import { Product } from '@/lib/types';
-import { addProduct, updateProduct, CATEGORIES } from '@/lib/utils';
+import { products as productsApi, categories as categoriesApi } from '@/lib/api';
 
 interface ProductFormProps {
   product?: Product;
@@ -16,63 +16,111 @@ export default function ProductForm({ product, mode }: ProductFormProps) {
     name: product?.name || '',
     price: product?.price || 0,
     description: product?.description || '',
-    category: product?.category || CATEGORIES[0],
-    relatedProducts: product?.relatedProducts || [],
+    category: product?.category || '',
+    inStock: product?.inStock ?? true,
   });
-  const [images, setImages] = useState<string[]>(product?.images || []);
-  const [relatedProductsInput, setRelatedProductsInput] = useState(
-    product?.relatedProducts?.join(', ') || ''
+
+  // Fetch categories from API
+  const [categories, setCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const cats = await categoriesApi.getPublic();
+        setCategories(cats.map((c: any) => c.name));
+        // Set default category if none selected
+        if (!formData.category && cats.length > 0) {
+          setFormData(prev => ({ ...prev, category: cats[0].name }));
+        }
+      } catch (err) {
+        console.error('Error fetching categories:', err);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // For edit mode, store existing image URLs for display and existing image objects for API
+  const [existingImages, setExistingImages] = useState<{ url: string; public_id: string }[]>(
+    product?.images || []
   );
+  // New image files (File objects from input)
+  const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
+  // Cache object URLs so they stay stable across renders
+  const newImageObjectUrls = useMemo(() => {
+    return newImageFiles.map(file => URL.createObjectURL(file));
+  }, [newImageFiles]);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
-    
-    // Validate images
-    if (images.length === 0) {
+
+    const totalImages = existingImages.length + newImageFiles.length;
+    if (totalImages === 0) {
       setError('At least 1 image is required');
       return;
     }
-    if (images.length > 4) {
+    if (totalImages > 4) {
       setError('Maximum 4 images allowed');
       return;
     }
 
-    // Parse related products
-    const relatedProducts = relatedProductsInput
-      .split(',')
-      .map(id => id.trim())
-      .filter(id => id.length > 0);
-
     setIsLoading(true);
 
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
     try {
-      if (mode === 'create') {
-        addProduct({
-          ...formData,
-          relatedProducts,
-          images,
-        });
-      } else if (product) {
-        updateProduct(product.uuid, {
-          ...formData,
-          relatedProducts,
-          images,
-        });
+      const formDataToSend = new FormData();
+      formDataToSend.append('name', formData.name);
+      formDataToSend.append('price', formData.price.toString());
+      formDataToSend.append('description', formData.description);
+      formDataToSend.append('category', formData.category);
+      formDataToSend.append('inStock', formData.inStock.toString());
+
+      // Append existing images (for edit mode)
+      if (mode === 'edit' && existingImages.length > 0) {
+        formDataToSend.append('existingImages', JSON.stringify(existingImages));
       }
 
-      router.push('/admin/products');
-    } catch (err) {
-      setError('Failed to save product. Please try again.');
-    }
+      // Append new image files
+      for (const file of newImageFiles) {
+        formDataToSend.append('images', file);
+      }
 
-    setIsLoading(false);
+      if (mode === 'create') {
+        await productsApi.create(formDataToSend);
+      } else if (product) {
+        await productsApi.update(product._id, formDataToSend);
+      }
+
+      router.push('/products');
+    } catch (err: any) {
+      console.error('Error saving product:', err);
+      setError(err.response?.data?.message || 'Failed to save product. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Compute all image URLs for ImageUpload component
+  const allImageUrls = [
+    ...existingImages.map(img => img.url),
+    ...newImageObjectUrls
+  ];
+
+  const handleImagesChange = (urls: string[]) => {
+    // Determine which existing images to keep
+    const keptExisting = existingImages.filter(img => urls.includes(img.url));
+    setExistingImages(keptExisting);
+
+    // Determine new files to keep using cached object URLs
+    const keptNewFiles = newImageFiles.filter((_, i) => urls.includes(newImageObjectUrls[i]));
+    setNewImageFiles(keptNewFiles);
+  };
+
+  const handleFilesSelected = (files: File[]) => {
+    setNewImageFiles(prev => [...prev, ...files]);
   };
 
   return (
@@ -82,7 +130,7 @@ export default function ProductForm({ product, mode }: ProductFormProps) {
           {mode === 'create' ? 'Add New Product' : 'Edit Product'}
         </h1>
         <p className="text-muted-foreground">
-          {mode === 'create' 
+          {mode === 'create'
             ? 'Create a new product listing for your store'
             : 'Update the product information below'}
         </p>
@@ -91,7 +139,7 @@ export default function ProductForm({ product, mode }: ProductFormProps) {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-card rounded-2xl shadow-md p-8">
           <h2 className="text-xl font-bold text-foreground mb-6">Product Information</h2>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Name */}
             <div className="lg:col-span-2">
@@ -144,10 +192,17 @@ export default function ProductForm({ product, mode }: ProductFormProps) {
                 className="w-full px-4 py-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all duration-300"
                 required
               >
-                {CATEGORIES.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
+                {categories.length === 0 ? (
+                  <option value="">No categories available</option>
+                ) : (
+                  categories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))
+                )}
               </select>
+              <p className="text-xs text-muted-foreground mt-1">
+                <a href="/categories" className="text-primary hover:underline">Manage categories</a> to add more
+              </p>
             </div>
 
             {/* Description */}
@@ -166,20 +221,17 @@ export default function ProductForm({ product, mode }: ProductFormProps) {
               />
             </div>
 
-            {/* Related Products */}
+            {/* In Stock */}
             <div className="lg:col-span-2">
-              <label htmlFor="relatedProducts" className="block text-sm font-medium text-foreground mb-2">
-                Related Products
-                <span className="text-xs text-muted-foreground ml-2">(comma-separated UUIDs)</span>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.inStock}
+                  onChange={(e) => setFormData({ ...formData, inStock: e.target.checked })}
+                  className="w-5 h-5 rounded border-border text-primary focus:ring-primary"
+                />
+                <span className="text-sm font-medium text-foreground">In Stock</span>
               </label>
-              <input
-                type="text"
-                id="relatedProducts"
-                value={relatedProductsInput}
-                onChange={(e) => setRelatedProductsInput(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all duration-300 font-mono text-sm"
-                placeholder="uuid-1, uuid-2, uuid-3"
-              />
             </div>
           </div>
         </div>
@@ -188,8 +240,9 @@ export default function ProductForm({ product, mode }: ProductFormProps) {
         <div className="bg-card rounded-2xl shadow-md p-8">
           <h2 className="text-xl font-bold text-foreground mb-6">Product Images</h2>
           <ImageUpload
-            images={images}
-            onImagesChange={setImages}
+            images={allImageUrls}
+            onImagesChange={handleImagesChange}
+            onFilesSelected={handleFilesSelected}
             error={error}
             maxImages={4}
           />
@@ -219,10 +272,10 @@ export default function ProductForm({ product, mode }: ProductFormProps) {
               </>
             )}
           </button>
-          
+
           <button
             type="button"
-            onClick={() => router.push('/admin/products')}
+            onClick={() => router.push('/products')}
             className="px-8 py-4 rounded-full font-semibold border-2 border-border text-foreground hover:bg-muted transition-all duration-300"
           >
             Cancel

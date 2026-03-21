@@ -1,20 +1,21 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import Image from 'next/image';
 
 interface ImageUploadProps {
   images: string[];
   onImagesChange: (images: string[]) => void;
+  onFilesSelected?: (files: File[]) => void;
   error?: string;
   maxImages?: number;
 }
 
-export default function ImageUpload({ 
-  images, 
-  onImagesChange, 
+export default function ImageUpload({
+  images,
+  onImagesChange,
+  onFilesSelected,
   error,
-  maxImages = 4 
+  maxImages = 4
 }: ImageUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -45,19 +46,15 @@ export default function ImageUpload({
 
   const handleFiles = (files: File[]) => {
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
-    
+
     if (images.length + imageFiles.length > maxImages) {
       return;
     }
 
-    imageFiles.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        onImagesChange([...images, result]);
-      };
-      reader.readAsDataURL(file);
-    });
+    // Notify parent about selected files (parent handles URL creation)
+    if (onFilesSelected) {
+      onFilesSelected(imageFiles);
+    }
   };
 
   const removeImage = (index: number) => {
@@ -95,24 +92,24 @@ export default function ImageUpload({
             onChange={handleFileSelect}
             className="hidden"
           />
-          
+
           <div className="flex flex-col items-center gap-4 text-center">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
-              <svg 
-                className="w-8 h-8 text-primary" 
-                fill="none" 
-                stroke="currentColor" 
+              <svg
+                className="w-8 h-8 text-primary"
+                fill="none"
+                stroke="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" 
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                 />
               </svg>
             </div>
-            
+
             <div>
               <p className="text-lg font-semibold text-foreground">
                 Drag & drop images or click to upload
@@ -142,21 +139,20 @@ export default function ImageUpload({
       {images.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {images.map((image, index) => (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className="relative group animate-scaleIn"
               style={{ animationDelay: `${index * 100}ms` }}
             >
               <div className="aspect-square rounded-xl overflow-hidden shadow-md bg-muted">
-                <Image
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src={image}
                   alt={`Product image ${index + 1}`}
-                  width={200}
-                  height={200}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                 />
               </div>
-              
+
               {/* Remove Button */}
               <button
                 onClick={() => removeImage(index)}

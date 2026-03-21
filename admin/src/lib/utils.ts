@@ -2,7 +2,7 @@ import { Product, AdminSettings } from './types';
 
 const PRODUCTS_KEY = 'indian_aura_products';
 const SETTINGS_KEY = 'indian_aura_settings';
-const AUTH_KEY = 'indian_aura_admin_auth';
+const TOKEN_KEY = 'token';
 
 export function generateUUID(): string {
   return crypto.randomUUID();
@@ -57,7 +57,7 @@ export function updateProduct(uuid: string, updates: Partial<Product>): Product 
     ...updates,
     updatedAt: new Date().toISOString(),
   };
-  
+
   if (updates.name) {
     updatedProduct.slug = generateSlug(updates.name);
   }
@@ -90,17 +90,18 @@ export function updateSettings(settings: Partial<AdminSettings>): AdminSettings 
 
 export function setAuth(token: string): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(AUTH_KEY, token);
+  localStorage.setItem(TOKEN_KEY, token);
 }
 
 export function getAuth(): string | null {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem(AUTH_KEY);
+  return localStorage.getItem(TOKEN_KEY);
 }
 
 export function clearAuth(): void {
   if (typeof window === 'undefined') return;
-  localStorage.removeItem(AUTH_KEY);
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem('user');
 }
 
 export function isAuthenticated(): boolean {

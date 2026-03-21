@@ -1,8 +1,9 @@
 import type { MetadataRoute } from "next";
-import { products } from "@/lib/products";
+import { fetchProducts } from "@/lib/api";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://indianaura.com";
+  const products = await fetchProducts();
 
   const productEntries = products.map((product) => ({
     url: `${baseUrl}/products/${product.id}`,

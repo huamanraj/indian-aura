@@ -3,15 +3,15 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { products } from "@/lib/products";
-import { searchProductsLocal } from "@/lib/search";
 import { debounce } from "@/lib/utils";
 import SearchResults from "./SearchResults";
 import type { Product } from "@/lib/products";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
 interface SearchBarProps {
   className?: string;
-  onResultClick?: (productId: number) => void;
+  onResultClick?: (productId: string) => void;
 }
 
 export default function SearchBar({ className = "", onResultClick }: SearchBarProps) {
@@ -24,11 +24,24 @@ export default function SearchBar({ className = "", onResultClick }: SearchBarPr
   const [ariaMessage, setAriaMessage] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const router = useRouter();
 
-  // Debounced search function
+  // Transform backend product to frontend format
+  const transformProduct = (p: any): Product => ({
+    id: p._id,
+    name: p.name,
+    image: p.images?.[0]?.url || '/image1.jpeg',
+    price: `₹${p.price?.toLocaleString() || p.price}`,
+    priceValue: p.price,
+    category: p.category,
+    description: p.description,
+    trending: false,
+  });
+
+  // Debounced search function using API
   const performSearch = useCallback(
-    debounce((query: string) => {
+    debounce(async (query: string) => {
       if (!query || query.trim().length === 0) {
         setSearchResults([]);
         setIsSearching(false);
@@ -40,23 +53,37 @@ export default function SearchBar({ className = "", onResultClick }: SearchBarPr
         return;
       }
 
+      // Cancel previous request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      abortControllerRef.current = new AbortController();
+
       setIsSearching(true);
       setAriaMessage("Searching...");
-      
+
       // Show loading state only after 300ms delay
       loadingTimeoutRef.current = setTimeout(() => {
         setShowLoading(true);
       }, 300);
-      
-      // Simulate async search with setTimeout
-      setTimeout(() => {
-        const results = searchProductsLocal(query, products);
+
+      try {
+        const response = await fetch(
+          `${API_URL}/products/search?q=${encodeURIComponent(query)}`,
+          { signal: abortControllerRef.current.signal }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Search failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const results = (data.results || []).map(transformProduct);
+
         setSearchResults(results);
-        setIsSearching(false);
-        setShowLoading(false);
         setIsSearchOpen(true);
         setSelectedIndex(-1);
-        
+
         // Announce results to screen readers
         if (results.length === 0) {
           setAriaMessage("No products found");
@@ -65,14 +92,33 @@ export default function SearchBar({ className = "", onResultClick }: SearchBarPr
         } else {
           setAriaMessage(`${results.length} products found`);
         }
-        
+      } catch (error: any) {
+        if (error.name !== 'AbortError') {
+          console.error('Search error:', error);
+          setSearchResults([]);
+        }
+      } finally {
+        setIsSearching(false);
+        setShowLoading(false);
         if (loadingTimeoutRef.current) {
           clearTimeout(loadingTimeoutRef.current);
         }
-      }, 100);
+      }
     }, 300),
     []
   );
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Handle input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,12 +128,12 @@ export default function SearchBar({ className = "", onResultClick }: SearchBarPr
   };
 
   // Handle result click
-  const handleResultClick = (productId: number) => {
+  const handleResultClick = (productId: string) => {
     setIsSearchOpen(false);
     setSearchQuery("");
     setSearchResults([]);
     setSelectedIndex(-1);
-    
+
     if (onResultClick) {
       onResultClick(productId);
     }
@@ -130,7 +176,7 @@ export default function SearchBar({ className = "", onResultClick }: SearchBarPr
         e.preventDefault();
         if (selectedIndex >= 0 && selectedIndex < searchResults.length) {
           const selectedProduct = searchResults[selectedIndex];
-          handleResultClick(selectedProduct.id);
+          handleResultClick(selectedProduct.id as string);
           router.push(`/products/${selectedProduct.id}`);
         }
         break;

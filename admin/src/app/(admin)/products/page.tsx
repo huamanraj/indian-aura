@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Product } from '@/lib/types';
-import { getProducts, deleteProduct } from '@/lib/utils';
+import { products as productsApi } from '@/lib/api';
 
 export default function ProductsListPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -13,9 +13,17 @@ export default function ProductsListPage() {
   const [filterCategory, setFilterCategory] = useState('all');
 
   useEffect(() => {
-    const data = getProducts();
-    setProducts(data);
-    setIsLoading(false);
+    const fetchProducts = async () => {
+      try {
+        const data = await productsApi.getAll();
+        setProducts(data);
+      } catch (err) {
+        console.error('Error fetching products:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProducts();
   }, []);
 
   const filteredProducts = products.filter(product => {
@@ -25,10 +33,14 @@ export default function ProductsListPage() {
     return matchesSearch && matchesCategory;
   });
 
-  const handleDelete = (uuid: string, name: string) => {
+  const handleDelete = async (id: string, name: string) => {
     if (confirm(`Are you sure you want to delete "${name}"?`)) {
-      deleteProduct(uuid);
-      setProducts(products.filter(p => p.uuid !== uuid));
+      try {
+        await productsApi.delete(id);
+        setProducts(products.filter(p => p._id !== id));
+      } catch (err) {
+        console.error('Error deleting product:', err);
+      }
     }
   };
 
@@ -49,7 +61,7 @@ export default function ProductsListPage() {
           <h1 className="text-4xl font-bold text-foreground mb-2">Products</h1>
           <p className="text-muted-foreground">Manage your product catalog</p>
         </div>
-        
+
         <Link
           href="/products/new"
           className="gradient-primary text-white px-6 py-3 rounded-full font-semibold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 flex items-center gap-2"
@@ -72,7 +84,7 @@ export default function ProductsListPage() {
             className="w-full px-4 py-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all duration-300"
           />
         </div>
-        
+
         <select
           value={filterCategory}
           onChange={(e) => setFilterCategory(e.target.value)}
@@ -114,15 +126,15 @@ export default function ProductsListPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProducts.map((product, index) => (
             <div
-              key={product.uuid}
+              key={product._id}
               className="bg-card rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 hover:scale-105 animate-scaleIn"
               style={{ animationDelay: `${index * 50}ms` }}
             >
               {/* Product Image */}
               <div className="relative h-48 bg-muted">
-                {product.images.length > 0 ? (
+                {product.images && product.images.length > 0 ? (
                   <Image
-                    src={product.images[0]}
+                    src={product.images[0].url}
                     alt={product.name}
                     fill
                     className="object-cover"
@@ -134,10 +146,10 @@ export default function ProductsListPage() {
                     </svg>
                   </div>
                 )}
-                
+
                 {/* Image Count Badge */}
                 <div className="absolute top-3 right-3 bg-black/60 text-white px-3 py-1 rounded-full text-xs font-medium">
-                  {product.images.length} {product.images.length === 1 ? 'image' : 'images'}
+                  {product.images?.length || 0} {(product.images?.length || 0) === 1 ? 'image' : 'images'}
                 </div>
               </div>
 
@@ -164,7 +176,7 @@ export default function ProductsListPage() {
                 {/* Actions */}
                 <div className="flex gap-2 pt-2">
                   <Link
-                    href={`/products/${product.uuid}`}
+                    href={`/products/${product._id}`}
                     className="flex-1 bg-primary text-white px-4 py-2 rounded-xl font-medium text-center hover:bg-primary/90 transition-all duration-300 flex items-center justify-center gap-2"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -173,7 +185,7 @@ export default function ProductsListPage() {
                     Edit
                   </Link>
                   <button
-                    onClick={() => handleDelete(product.uuid, product.name)}
+                    onClick={() => handleDelete(product._id, product.name)}
                     className="px-4 py-2 rounded-xl font-medium text-red-600 hover:bg-red-50 transition-all duration-300 flex items-center justify-center gap-2 border border-red-200"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

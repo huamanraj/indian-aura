@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, FormEvent } from 'react';
-import { getSettings, updateSettings } from '@/lib/utils';
+import { settings as settingsApi } from '@/lib/api';
 
 export default function SettingsPage() {
   const [whatsappNumber, setWhatsappNumber] = useState('');
@@ -10,9 +10,17 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    const settings = getSettings();
-    setWhatsappNumber(settings.whatsappNumber);
-    setIsLoading(false);
+    const fetchSettings = async () => {
+      try {
+        const data = await settingsApi.get();
+        setWhatsappNumber(data.whatsappNumber || '');
+      } catch (err) {
+        console.error('Error fetching settings:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSettings();
   }, []);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -20,14 +28,15 @@ export default function SettingsPage() {
     setIsSaving(true);
     setSaved(false);
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    updateSettings({ whatsappNumber });
-    setSaved(true);
-    setIsSaving(false);
-
-    setTimeout(() => setSaved(false), 3000);
+    try {
+      await settingsApi.update({ whatsappNumber });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      console.error('Error saving settings:', err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (isLoading) {
@@ -47,7 +56,7 @@ export default function SettingsPage() {
 
       <div className="bg-card rounded-2xl shadow-md p-8 max-w-2xl">
         <h2 className="text-xl font-bold text-foreground mb-6">Contact Information</h2>
-        
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label htmlFor="whatsapp" className="block text-sm font-medium text-foreground mb-2">
@@ -118,8 +127,8 @@ export default function SettingsPage() {
           <div>
             <h3 className="font-semibold text-foreground mb-1">Why is this important?</h3>
             <p className="text-sm text-muted-foreground">
-              Your WhatsApp number will be displayed on the product pages, allowing customers to 
-              directly contact you for inquiries and orders. Make sure the number is active and 
+              Your WhatsApp number will be displayed on the product pages, allowing customers to
+              directly contact you for inquiries and orders. Make sure the number is active and
               can receive messages.
             </p>
           </div>

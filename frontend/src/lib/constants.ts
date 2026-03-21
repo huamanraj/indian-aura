@@ -1,10 +1,12 @@
 export const WHATSAPP_NUMBER = "918459492209";
 
-export function getWhatsAppLink(productName?: string): string {
+export function getWhatsAppLink(productName?: string, whatsappNumber?: string): string {
+  const number = whatsappNumber || WHATSAPP_NUMBER;
+  const cleanNumber = number.replace(/[^0-9]/g, '');
   const message = productName
     ? `Hi! I want to order *${productName}* from Indian Aura.`
     : "Hi! I'd like to know more about Indian Aura products.";
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+  return `https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`;
 }
 
 export const BRAND = {
