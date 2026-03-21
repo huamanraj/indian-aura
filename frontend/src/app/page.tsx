@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { MessageCircle, Sparkles, Palette, Heart } from "lucide-react";
-import { products, categories } from "@/lib/products";
+import { categories } from "@/lib/products";
+import { fetchProducts } from "@/lib/api";
 import { getWhatsAppLink, BRAND } from "@/lib/constants";
 import ProductCard from "@/components/ProductCard";
 import FadeIn from "@/components/FadeIn";
@@ -13,7 +14,8 @@ export const metadata: Metadata = {
     "Handcrafted decor blending tradition and modern elegance. Discover festive essentials, ceremonial artistry, and auspicious decor.",
 };
 
-export default function HomePage() {
+export default async function HomePage() {
+  const products = await fetchProducts();
   const trendingProducts = products.filter((p) => p.trending);
   const popularProducts = products.slice(0, 8);
 

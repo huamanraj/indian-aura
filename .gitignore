@@ -47,3 +47,5 @@ coverage/
 *.log
 .cache/
 .turbo
+
+.kiro

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { products } from "@/lib/products";
+import { fetchProducts } from "@/lib/api";
 import ProductsClient from "@/components/ProductsClient";
 
 export const metadata: Metadata = {
@@ -8,7 +8,9 @@ export const metadata: Metadata = {
     "Explore our handcrafted Indian decor collection. Festive essentials, ceremonial artistry, and auspicious decor for your home.",
 };
 
-export default function ProductsPage() {
+export default async function ProductsPage() {
+  const products = await fetchProducts();
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
       <div className="text-center mb-10">

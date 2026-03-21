@@ -59,7 +59,7 @@ const productSchema = new mongoose.Schema({
   }
 });
 
-productSchema.pre('save', function (next) {
+productSchema.pre('save', function () {
   if (this.isModified('name')) {
     this.slug = this.name
       .toLowerCase()
@@ -67,7 +67,6 @@ productSchema.pre('save', function (next) {
       .replace(/(^-|-$)/g, '');
   }
   this.updatedAt = Date.now();
-  next();
 });
 
 module.exports = mongoose.model('Product', productSchema);
