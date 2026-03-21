@@ -26,12 +26,12 @@ export default function AboutPage() {
 
       <div className="grid lg:grid-cols-2 gap-12 items-center mb-20">
         <FadeIn direction="left">
-          <div className="relative aspect-[4/3] rounded-2xl overflow-hidden">
+          <div className="relative aspect-[4/3]  rounded-2xl overflow-hidden">
             <Image
-              src="/image2.jpeg"
+              src="/logo.png"
               alt="Indian Aura heritage"
               fill
-              className="object-cover"
+              className=""
               sizes="(max-width: 1024px) 100vw, 50vw"
               priority
             />
@@ -150,9 +150,7 @@ export default function AboutPage() {
               {BRAND.founder.charAt(0)}
             </span>
           </div>
-          <h3 className="text-xl font-bold text-foreground">
-            {BRAND.founder}
-          </h3>
+          <h3 className="text-xl font-bold text-foreground">{BRAND.founder}</h3>
           <p className="text-primary font-medium mt-1">Founder</p>
           <p className="text-muted-foreground mt-4 max-w-xl mx-auto leading-relaxed">
             Driven by a deep love for Indian traditions and a vision to bring
