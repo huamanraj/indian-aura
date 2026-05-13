@@ -11,16 +11,23 @@ const getApiUrl = () => {
 };
 
 // Transform backend product to frontend format
-const transformProduct = (p: any): Product => ({
-  id: String(p._id ?? p.uuid ?? ''),
-  name: p.name,
-  image: p.images?.[0]?.url || '/image1.jpeg',
-  price: `₹${p.price?.toLocaleString() || p.price}`,
-  priceValue: p.price,
-  category: p.category,
-  description: p.description,
-  trending: false,
-});
+const transformProduct = (p: any): Product | null => {
+  const rawId = p._id ?? p.uuid ?? p.id;
+  if (!rawId) {
+    return null;
+  }
+
+  return {
+    id: String(rawId),
+    name: p.name,
+    image: p.images?.[0]?.url || '/image1.jpeg',
+    price: `₹${p.price?.toLocaleString() || p.price}`,
+    priceValue: p.price,
+    category: p.category,
+    description: p.description,
+    trending: false,
+  };
+};
 
 export async function fetchProducts(): Promise<Product[]> {
   try {
@@ -35,7 +42,9 @@ export async function fetchProducts(): Promise<Product[]> {
     }
 
     const backendProducts = await response.json();
-    return backendProducts.map(transformProduct);
+    return backendProducts
+      .map(transformProduct)
+      .filter((product: Product | null): product is Product => product !== null);
   } catch (error) {
     console.error('Error fetching products from API:', error);
     return [];
@@ -54,7 +63,7 @@ export async function fetchProductById(id: string | number): Promise<Product | u
     }
 
     const p = await response.json();
-    return transformProduct(p);
+    return transformProduct(p) ?? undefined;
   } catch (error) {
     console.error('Error fetching product from API:', error);
     return undefined;
@@ -85,7 +94,9 @@ export async function searchProducts(query: string): Promise<Product[]> {
     }
 
     const data = await response.json();
-    return (data.results || []).map(transformProduct);
+    return (data.results || [])
+      .map(transformProduct)
+      .filter((product: Product | null): product is Product => product !== null);
   } catch (error) {
     console.error('Error searching products:', error);
     return [];

@@ -92,9 +92,14 @@ function sleep(ms: number): Promise<void> {
 /**
  * Normalize backend Product model to frontend Product interface
  */
-function normalizeBackendProduct(backendProduct: any): Product {
+function normalizeBackendProduct(backendProduct: any): Product | null {
+  const rawId = backendProduct._id ?? backendProduct.uuid ?? backendProduct.id;
+  if (!rawId) {
+    return null;
+  }
+
   return {
-    id: String(backendProduct._id || backendProduct.uuid || ''),
+    id: String(rawId),
     name: backendProduct.name,
     image: backendProduct.images?.[0]?.url || '',
     price: `₹${backendProduct.price}`,
@@ -145,7 +150,9 @@ export async function searchProductsAPI(query: string): Promise<Product[]> {
       }
 
       // Normalize backend products to frontend interface
-      return data.results.map(normalizeBackendProduct);
+      return data.results
+        .map(normalizeBackendProduct)
+        .filter((product: Product | null): product is Product => product !== null);
 
     } catch (error) {
       lastError = error as Error;
