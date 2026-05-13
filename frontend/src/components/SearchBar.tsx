@@ -11,7 +11,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 interface SearchBarProps {
   className?: string;
-  onResultClick?: (productId: string) => void;
+  onResultClick?: (productId: string | number) => void;
 }
 
 export default function SearchBar({ className = "", onResultClick }: SearchBarProps) {
@@ -128,7 +128,7 @@ export default function SearchBar({ className = "", onResultClick }: SearchBarPr
   };
 
   // Handle result click
-  const handleResultClick = (productId: string) => {
+  const handleResultClick = (productId: string | number) => {
     setIsSearchOpen(false);
     setSearchQuery("");
     setSearchResults([]);
@@ -176,7 +176,7 @@ export default function SearchBar({ className = "", onResultClick }: SearchBarPr
         e.preventDefault();
         if (selectedIndex >= 0 && selectedIndex < searchResults.length) {
           const selectedProduct = searchResults[selectedIndex];
-          handleResultClick(selectedProduct.id as string);
+          handleResultClick(selectedProduct.id);
           router.push(`/products/${selectedProduct.id}`);
         }
         break;

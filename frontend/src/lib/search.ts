@@ -25,7 +25,7 @@ export function searchProductsLocal(query: string, products: Product[]): Product
 
   const startTime = performance.now();
   const lowerQuery = query.toLowerCase().trim();
-  const matchedProducts = new Set<number>(); // Use Set to deduplicate by product ID
+  const matchedProducts = new Set<string | number>(); // Use Set to deduplicate by product ID
   const results: Product[] = [];
 
   for (const product of products) {

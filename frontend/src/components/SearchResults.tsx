@@ -11,7 +11,7 @@ interface SearchResultsProps {
   isLoading: boolean;
   query: string;
   selectedIndex: number;
-  onResultClick: (productId: string) => void;
+  onResultClick: (productId: string | number) => void;
   onClose: () => void;
 }
 
