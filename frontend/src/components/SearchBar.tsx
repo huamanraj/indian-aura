@@ -28,16 +28,23 @@ export default function SearchBar({ className = "", onResultClick }: SearchBarPr
   const router = useRouter();
 
   // Transform backend product to frontend format
-  const transformProduct = (p: any): Product => ({
-    id: p._id,
-    name: p.name,
-    image: p.images?.[0]?.url || '/image1.jpeg',
-    price: `₹${p.price?.toLocaleString() || p.price}`,
-    priceValue: p.price,
-    category: p.category,
-    description: p.description,
-    trending: false,
-  });
+  const transformProduct = (p: any): Product | null => {
+    const rawId = p._id ?? p.uuid ?? p.id;
+    if (!rawId) {
+      return null;
+    }
+
+    return {
+      id: String(rawId),
+      name: p.name,
+      image: p.images?.[0]?.url || '/image1.jpeg',
+      price: `₹${p.price?.toLocaleString() || p.price}`,
+      priceValue: p.price,
+      category: p.category,
+      description: p.description,
+      trending: false,
+    };
+  };
 
   // Debounced search function using API
   const performSearch = useCallback(
@@ -78,7 +85,9 @@ export default function SearchBar({ className = "", onResultClick }: SearchBarPr
         }
 
         const data = await response.json();
-        const results = (data.results || []).map(transformProduct);
+        const results = (data.results || [])
+          .map(transformProduct)
+          .filter((product: Product | null): product is Product => product !== null);
 
         setSearchResults(results);
         setIsSearchOpen(true);
@@ -176,8 +185,9 @@ export default function SearchBar({ className = "", onResultClick }: SearchBarPr
         e.preventDefault();
         if (selectedIndex >= 0 && selectedIndex < searchResults.length) {
           const selectedProduct = searchResults[selectedIndex];
-          handleResultClick(selectedProduct.id as string);
-          router.push(`/products/${selectedProduct.id}`);
+          const selectedProductId = selectedProduct.id;
+          handleResultClick(selectedProductId);
+          router.push(`/products/${selectedProductId}`);
         }
         break;
     }

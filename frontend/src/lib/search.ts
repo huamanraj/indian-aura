@@ -25,12 +25,14 @@ export function searchProductsLocal(query: string, products: Product[]): Product
 
   const startTime = performance.now();
   const lowerQuery = query.toLowerCase().trim();
-  const matchedProducts = new Set<number>(); // Use Set to deduplicate by product ID
+  const matchedProducts = new Set<string>(); // Use Set to deduplicate by product ID
   const results: Product[] = [];
 
   for (const product of products) {
+    const productId = String(product.id);
+
     // Skip if already matched (deduplication)
-    if (matchedProducts.has(product.id)) {
+    if (matchedProducts.has(productId)) {
       continue;
     }
 
@@ -40,7 +42,7 @@ export function searchProductsLocal(query: string, products: Product[]): Product
     const matchesDescription = product.description.toLowerCase().includes(lowerQuery);
 
     if (matchesName || matchesCategory || matchesDescription) {
-      matchedProducts.add(product.id);
+      matchedProducts.add(productId);
       results.push(product);
 
       // Limit results to MAX_RESULTS
@@ -90,9 +92,14 @@ function sleep(ms: number): Promise<void> {
 /**
  * Normalize backend Product model to frontend Product interface
  */
-function normalizeBackendProduct(backendProduct: any): Product {
+function normalizeBackendProduct(backendProduct: any): Product | null {
+  const rawId = backendProduct._id ?? backendProduct.uuid ?? backendProduct.id;
+  if (!rawId) {
+    return null;
+  }
+
   return {
-    id: backendProduct._id || backendProduct.uuid,
+    id: String(rawId),
     name: backendProduct.name,
     image: backendProduct.images?.[0]?.url || '',
     price: `₹${backendProduct.price}`,
@@ -143,7 +150,9 @@ export async function searchProductsAPI(query: string): Promise<Product[]> {
       }
 
       // Normalize backend products to frontend interface
-      return data.results.map(normalizeBackendProduct);
+      return data.results
+        .map(normalizeBackendProduct)
+        .filter((product: Product | null): product is Product => product !== null);
 
     } catch (error) {
       lastError = error as Error;
