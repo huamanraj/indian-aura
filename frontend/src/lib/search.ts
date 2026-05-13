@@ -94,7 +94,7 @@ function sleep(ms: number): Promise<void> {
  */
 function normalizeBackendProduct(backendProduct: any): Product {
   return {
-    id: backendProduct._id || backendProduct.uuid,
+    id: String(backendProduct._id || backendProduct.uuid || ''),
     name: backendProduct.name,
     image: backendProduct.images?.[0]?.url || '',
     price: `₹${backendProduct.price}`,

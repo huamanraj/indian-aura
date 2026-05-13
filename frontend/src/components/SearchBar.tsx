@@ -29,7 +29,7 @@ export default function SearchBar({ className = "", onResultClick }: SearchBarPr
 
   // Transform backend product to frontend format
   const transformProduct = (p: any): Product => ({
-    id: p._id,
+    id: String(p._id ?? p.uuid ?? ''),
     name: p.name,
     image: p.images?.[0]?.url || '/image1.jpeg',
     price: `₹${p.price?.toLocaleString() || p.price}`,
@@ -176,7 +176,7 @@ export default function SearchBar({ className = "", onResultClick }: SearchBarPr
         e.preventDefault();
         if (selectedIndex >= 0 && selectedIndex < searchResults.length) {
           const selectedProduct = searchResults[selectedIndex];
-          const selectedProductId = String(selectedProduct.id);
+          const selectedProductId = selectedProduct.id;
           handleResultClick(selectedProductId);
           router.push(`/products/${selectedProductId}`);
         }

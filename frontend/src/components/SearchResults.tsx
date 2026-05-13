@@ -83,7 +83,7 @@ export default function SearchResults({
                 key={product.id}
                 product={product}
                 isSelected={index === selectedIndex}
-                onClick={() => onResultClick(String(product.id))}
+                onClick={() => onResultClick(product.id)}
               />
             ))}
           </div>

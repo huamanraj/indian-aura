@@ -12,7 +12,7 @@ const getApiUrl = () => {
 
 // Transform backend product to frontend format
 const transformProduct = (p: any): Product => ({
-  id: p._id,
+  id: String(p._id ?? p.uuid ?? ''),
   name: p.name,
   image: p.images?.[0]?.url || '/image1.jpeg',
   price: `₹${p.price?.toLocaleString() || p.price}`,
