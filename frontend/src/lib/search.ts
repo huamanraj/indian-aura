@@ -25,12 +25,14 @@ export function searchProductsLocal(query: string, products: Product[]): Product
 
   const startTime = performance.now();
   const lowerQuery = query.toLowerCase().trim();
-  const matchedProducts = new Set<string | number>(); // Use Set to deduplicate by product ID
+  const matchedProducts = new Set<string>(); // Use Set to deduplicate by product ID
   const results: Product[] = [];
 
   for (const product of products) {
+    const productId = String(product.id);
+
     // Skip if already matched (deduplication)
-    if (matchedProducts.has(product.id)) {
+    if (matchedProducts.has(productId)) {
       continue;
     }
 
@@ -40,7 +42,7 @@ export function searchProductsLocal(query: string, products: Product[]): Product
     const matchesDescription = product.description.toLowerCase().includes(lowerQuery);
 
     if (matchesName || matchesCategory || matchesDescription) {
-      matchedProducts.add(product.id);
+      matchedProducts.add(productId);
       results.push(product);
 
       // Limit results to MAX_RESULTS

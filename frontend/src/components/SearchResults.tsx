@@ -11,7 +11,7 @@ interface SearchResultsProps {
   isLoading: boolean;
   query: string;
   selectedIndex: number;
-  onResultClick: (productId: string | number) => void;
+  onResultClick: (productId: string) => void;
   onClose: () => void;
 }
 
@@ -83,7 +83,7 @@ export default function SearchResults({
                 key={product.id}
                 product={product}
                 isSelected={index === selectedIndex}
-                onClick={() => onResultClick(product.id)}
+                onClick={() => onResultClick(String(product.id))}
               />
             ))}
           </div>
