@@ -15,10 +15,24 @@ const app = express();
 connectDB();
 
 // CORS configuration
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'https://indian-aura-admin.vercel.app',
+  process.env.ADMIN_URL, // optional extra origin from env
+].filter(Boolean);
+
 const corsOptions = {
-  origin: true, // Allow all origins in development
+  origin: (origin, callback) => {
+    // Allow requests with no origin (curl, mobile apps, Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 };
 
 // Middleware
