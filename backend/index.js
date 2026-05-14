@@ -27,6 +27,11 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
+// Health check route
+app.get('/', (req, res) => {
+  res.json({ message: 'Backend is working good ✅', status: 'online' });
+});
+
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/products', require('./routes/products'));
