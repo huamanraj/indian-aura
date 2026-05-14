@@ -14,22 +14,10 @@ const app = express();
 // Connect to MongoDB
 connectDB();
 
-// CORS configuration
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'https://indian-aura-admin.vercel.app',
-  process.env.ADMIN_URL, // optional extra origin from env
-].filter(Boolean);
-
+// CORS configuration - Allow all origins
 const corsOptions = {
-  origin: (origin, callback) => {
-    // Allow requests with no origin (curl, mobile apps, Postman)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    callback(new Error(`CORS: origin ${origin} not allowed`));
-  },
-  credentials: true,
+  origin: '*',
+  credentials: false,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
